@@ -37,12 +37,21 @@ class PickAndPlaceThreeArmHSM:
         # psm1_objects = filter(lambda obj: obj.pos.y() < self.median_object_y, objects)
         # psm2_objects = filter(lambda obj: obj.pos.y() >= self.median_object_y, objects)
         # psm3_objects = filter(lambda obj: obj.pos.y() >= self.median_object_y, objects)
-        psm1_objects.extend([objects[1], objects[4]])   # red 2
-        psm2_objects.extend([objects[0], objects[3]])   # green 1
-        psm3_objects.extend([objects[2], objects[5]])   # blue 0
+        # psm1_objects.extend([objects[1], objects[4]])   # red 0
+        # psm2_objects.extend([objects[0], objects[3]])   # green 2
+        # psm3_objects.extend([objects[2], objects[5]])   # blue 1
 
-        if self.log_verbose:
-            loginfo("PSM1 objects left: {}, PSM2 objects left: {}, PSM3 objects left: {}".format(psm1_objects, psm2_objects, psm3_objects))
+        for object in self.world.objects:
+            if object.color == 0:
+                psm1_objects.append(object)
+            if object.color == 2:
+                psm2_objects.append(object)
+            if object.color == 1:
+                psm3_objects.append(object)
+
+        # if self.log_verbose:
+        #     loginfo("PSM1 objects left: {}, PSM2 objects left: {}, PSM3 objects left: {}".format(psm1_objects, psm2_objects, psm3_objects))
+        
         result = dict()
 
         if psm1_objects:
@@ -90,6 +99,7 @@ class PickAndPlaceThreeArmHSM:
         # with an updated object
         done_sm_idxs = filter(lambda sm_idx : self.psm_state_machines[sm_idx].is_done(), 
                               range(len(self.psm_state_machines)))
+                            
         if self.log_verbose:
             loginfo("Done child sms: {}".format(done_sm_idxs))
 
@@ -142,11 +152,13 @@ class PickAndPlaceThreeArmHSM:
     def _dropping_next(self):
         if self.dropping_sm.is_done():
             loginfo(self.dropping_sm.psm.name() + " is done dropping")
+
             # check if the psm has objects left to pick up
             # we have to make sure that the dropping arm is moving away 
             # from the bowl before starting the next drop
             psm_to_closest_object_map = self._get_psm_object_assignments()
             sm_idx = self.psms.index(self.dropping_sm.psm)
+
             if sm_idx in psm_to_closest_object_map:
                 closest_obj = psm_to_closest_object_map[sm_idx]
                 if self.log_verbose:
@@ -193,6 +205,7 @@ class PickAndPlaceThreeArmHSM:
         # this is a copypaste from _picking_next
         # TODO: reduce code duplication (that's the whole point of having an HSM)
         psm_to_closest_object_map = self._get_psm_object_assignments()
+        
         for sm_idx, (psm, world_to_psm_tf) in enumerate(zip(self.psms, self.world_to_psm_tfs)):
             if sm_idx in psm_to_closest_object_map:
                 closest_obj = psm_to_closest_object_map[sm_idx]
